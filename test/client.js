@@ -48,19 +48,35 @@ suite('client', function() {
   test('going to a different url and logging', function(done) {
     var msgNo = 0;
     client.logger.handleMessage = function(msg) {
-      msgNo++;
-      if (msgNo === 1) {
-        assert.equal(msg.message, '____I_AM_SO_UNIQUE___');
-        assert.equal(msg.level, 'log');
-      } else if (msgNo === 2) {
-        assert.equal(msg.message, '___I_AM_SO_BROKEN___');
-        assert.equal(msg.level, 'error');
-        assert.equal(msg.stack.length, 1);
-        return done();
+
+      if (msgNo === 0 &&
+          msg.message === '____I_AM_SO_UNIQUE___' &&
+          msg.level === 'log') {
+        assert.ok(true, 'Got console.log');
+        msgNo++;
+      } else if (msgNo === 1 &&
+                 msg.message === '___I_AM_SO_BROKEN___' &&
+                 msg.level === 'error' &&
+                 msg.stack.length) {
+        assert.ok(true, 'Got console.error');
+        done();
       }
     };
 
     client.goUrl(localUrl('blank.html'), function() {});
     client.goUrl(localUrl('index.html'), function() {});
+  });
+
+  test('Catches content errors', function(done) {
+
+    client.logger.handleMessage = function(msg) {
+      if (msg.message.indexOf('SyntaxError') !== -1 &&
+          msg.filename.indexOf('error.html') !== -1) {
+        assert.ok(true, 'We got the syntax error');
+        done();
+      }
+    };
+
+    client.goUrl(localUrl('error.html'), function() {});
   });
 });
